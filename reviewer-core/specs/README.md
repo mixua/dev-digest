@@ -1,3 +1,5 @@
-# specs — reviewer-core
+# reviewer-core/specs
 
-Specs / acceptance criteria for the `reviewer-core` package. Empty for now.
+Contracts of the engine output. Background: [`../docs/`](../docs/README.md).
+
+- [review-outcome.md](review-outcome.md) — `ReviewOutcome` and finding invariants, each verified against code.
