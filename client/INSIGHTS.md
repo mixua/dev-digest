@@ -6,6 +6,8 @@ so the next agent/session doesn't relearn it. Append-only — see the
 
 ## What Works
 
+- **2026-11-22** — Hover popovers rendered as a `position: fixed` child of the hovered cell must sit flush with it (`top: rect.bottom`, no gap): any gap fires the cell's `mouseleave` while the pointer crosses it, so the card closes before it can be reached/scrolled. Mount the popover only while hovered so its `usePrReviews` query stays lazy. Evidence: `client/src/app/repos/[repoId]/pulls/_components/FindingsPopover/FindingsPopover.tsx`, `PRRow/PRRow.tsx`.
+
 
 ## What Doesn't Work
 
