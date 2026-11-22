@@ -7,7 +7,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import type { RunSummary } from "@devdigest/shared";
+import type { RunSummary, Severity } from "@devdigest/shared";
 import messages from "../../../../../../../../messages/en/prReview.json";
 import { RunHistory } from "./RunHistory";
 
@@ -34,10 +34,10 @@ function run(o: Partial<RunSummary>): RunSummary {
   };
 }
 
-function renderRuns(runs: RunSummary[]) {
+function renderRuns(runs: RunSummary[], sevByRun?: Map<string, Record<Severity, number>>) {
   return render(
     <NextIntlClientProvider locale="en" messages={{ prReview: messages }}>
-      <RunHistory runs={runs} onOpenTrace={() => {}} />
+      <RunHistory runs={runs} onOpenTrace={() => {}} sevByRun={sevByRun} />
     </NextIntlClientProvider>,
   );
 }
@@ -71,5 +71,13 @@ describe("RunHistory — outcome badge", () => {
   it("a running run reads 'running'", () => {
     renderRuns([run({ status: "running", score: null, blockers: null })]);
     expect(screen.getByText("running")).toBeInTheDocument();
+  });
+
+  it("shows severity chips for non-zero levels from sevByRun", () => {
+    const sev = new Map([["run-1", { CRITICAL: 2, WARNING: 0, SUGGESTION: 4 }]]);
+    renderRuns([run({ status: "done", findings_count: 6, score: 40 })], sev);
+    expect(screen.getByLabelText("2 critical")).toBeInTheDocument();
+    expect(screen.getByLabelText("4 suggestion")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/warning/)).not.toBeInTheDocument();
   });
 });
