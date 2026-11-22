@@ -96,8 +96,13 @@
       "author": "Author",
       "size": "Size",
       "score": "Score",
+      "findings": "Findings",
       "status": "Status",
       "updated": "Updated"
+    },
+    "findingsPopover": {
+      "title": "{count, plural, one {# finding} other {# findings}} in this run",
+      "loading": "Loading findings…"
     },
     "filesCount": "{count} files",
     "errorTitle": "Couldn’t load pull requests",
