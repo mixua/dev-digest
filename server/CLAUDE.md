@@ -1,5 +1,16 @@
 # server (@devdigest/api)
 
+## Stack
+Fastify 5 (zod type provider, SSE) · Drizzle ORM over postgres-js · Postgres + pgvector (Docker) · Octokit, simple-git, ripgrep, ast-grep · vitest + testcontainers. pnpm, Node ≥ 22. API on `127.0.0.1:3001`.
+
+## Commands (run in `server/`)
+- Dev API (watch): `pnpm dev` · needs Postgres up and migrations applied
+- DB: `pnpm db:migrate` (not run on boot) · `pnpm db:seed` (idempotent) · `pnpm db:generate` after editing `src/db/schema/*` (never hand-write SQL)
+- Typecheck: `pnpm typecheck`
+- Unit (hermetic, no Docker): `pnpm exec vitest run --exclude '**/*.it.test.ts'`
+- Integration (Docker / testcontainers): `pnpm exec vitest run .it.test` · all: `pnpm test`
+- Single file: `pnpm exec vitest run test/pulls-findings.test.ts`
+
 ## Before answering
 Search `server/docs/`, `server/specs/`, `server/INSIGHTS.md` for the topic before reading code.
 

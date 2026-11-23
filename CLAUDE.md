@@ -2,6 +2,20 @@
 
 Local-first AI PR reviewer. Course starter: Part-0 works end to end; each lesson adds one feature.
 
+## Stack
+- Node ≥ 22 (`nvm use 22`), TypeScript ESM. Package managers: **pnpm** in `server/`, `client/`; **npm** in `reviewer-core/`, `e2e/`.
+- `server/` Fastify 5 + Drizzle ORM + Postgres/pgvector (Docker) · `client/` Next.js 15 + React 19 + TanStack Query + next-intl
+- `reviewer-core/` pure review engine (zod, OpenAI-compatible SDK) · `e2e/` deterministic browser flows (no LLM) · tests: vitest everywhere
+
+## Commands
+- Bootstrap from zero (Postgres → .env → deps → migrate → seed → API :3001 + web :3000): `./scripts/dev.sh` (`--db-only`, `--no-client`, `--no-seed`)
+- Postgres only: `docker compose up -d` · stop: `docker compose down` (`-v` drops data)
+- Verify before commit — per touched package (details in its CLAUDE.md):
+  - `cd server && pnpm typecheck && pnpm exec vitest run --exclude '**/*.it.test.ts'`
+  - `cd client && pnpm typecheck && pnpm test`
+  - `cd reviewer-core && npm run typecheck && npm test`
+- UI changes: also open the page in the running app — tests/typecheck don't catch Next bundling errors (see `client/INSIGHTS.md`).
+
 ## Before answering
 Always search the relevant package's `docs/`, `specs/`, and `INSIGHTS.md` for what the
 user asks about FIRST — these are curated and may already answer it — then read code.
