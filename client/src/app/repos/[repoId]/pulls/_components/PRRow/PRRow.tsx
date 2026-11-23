@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Icon, Avatar, Badge, CircularScore } from "@devdigest/ui";
 import type { PrMeta } from "@/lib/types";
-import { SIZE_COLOR, STATUS_META } from "../../constants";
+import { SeverityChip } from "@/components/SeverityChip";
+import { SIZE_COLOR, STATUS_META, FINDINGS_FIELDS } from "../../constants";
 import { relativeTime, sizeOf } from "../../helpers";
 import { s } from "../../styles";
+import { FindingsPopover } from "../FindingsPopover";
 
 export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {
   const t = useTranslations("prReview");
@@ -16,6 +18,8 @@ export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {
   const [h, setH] = React.useState(false);
   const st = STATUS_META[pr.status] ?? STATUS_META.needs_review!;
   const { size, lines } = sizeOf(pr);
+  const [anchor, setAnchor] = React.useState<DOMRect | null>(null);
+  const total = FINDINGS_FIELDS.reduce((n, f) => n + (pr[f.field] ?? 0), 0);
   const reviewed = pr.score != null; // null score ⇒ PR has never been reviewed
   return (
     <div
@@ -52,6 +56,23 @@ export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {
         ) : (
           <span style={s.muted}>—</span>
         )}
+      </div>
+      <div
+        style={s.findingsCell}
+        onMouseEnter={(e) => {
+          e.stopPropagation();
+          setAnchor(e.currentTarget.getBoundingClientRect());
+        }}
+        onMouseLeave={() => setAnchor(null)}
+      >
+        {reviewed && total > 0 ? (
+          FINDINGS_FIELDS.map(({ sev, field }) =>
+            (pr[field] ?? 0) > 0 ? <SeverityChip key={sev} sev={sev} count={pr[field]!} /> : null,
+          )
+        ) : (
+          <span style={s.muted}>—</span>
+        )}
+        {anchor && total > 0 && pr.id && <FindingsPopover prId={pr.id} anchorRect={anchor} />}
       </div>
       <div>
         <Badge dot color={st.c} bg="transparent">

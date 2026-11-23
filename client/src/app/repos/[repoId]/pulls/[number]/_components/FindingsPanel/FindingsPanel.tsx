@@ -4,12 +4,12 @@
 
 import React from "react";
 import { useTranslations } from "next-intl";
-import { Toggle, EmptyState } from "@devdigest/ui";
-import type { FindingRecord } from "@devdigest/shared";
+import { Toggle, EmptyState, Icon, SEV } from "@devdigest/ui";
+import type { FindingRecord, Severity } from "@devdigest/shared";
 import { FindingCard } from "../FindingCard";
 import { useFindingAction } from "../../../../../../../lib/hooks/reviews";
 import { KEY_TO_ACTION } from "./constants";
-import { visibleFindings } from "./helpers";
+import { countBySeverity, visibleFindings } from "./helpers";
 import { s } from "./styles";
 
 export function FindingsPanel({
@@ -28,7 +28,18 @@ export function FindingsPanel({
   const [hideLow, setHideLow] = React.useState(false);
   const [focusIdx, setFocusIdx] = React.useState(0);
 
-  const shown = React.useMemo(() => visibleFindings(findings, hideLow), [findings, hideLow]);
+  const [sevFilter, setSevFilter] = React.useState<Severity | null>(null);
+
+  const counts = React.useMemo(
+    () => countBySeverity(visibleFindings(findings, hideLow)),
+    [findings, hideLow],
+  );
+  const shown = React.useMemo(
+    () => visibleFindings(findings, hideLow, sevFilter),
+    [findings, hideLow, sevFilter],
+  );
+  // type-only shared import: Next can't bundle @devdigest/shared at runtime
+  const levels = (Object.keys(counts) as Severity[]).filter((sev) => counts[sev] > 0 || sev === sevFilter);
 
   // j/k navigation + a/d shortcuts on the focused finding (keyboard).
   React.useEffect(() => {
@@ -48,6 +59,29 @@ export function FindingsPanel({
   return (
     <div>
       <div style={s.toolbar}>
+        <div style={s.counters}>
+          {levels.map((sev, i) => {
+            const SevIcon = Icon[SEV[sev].icon];
+            const active = sev === sevFilter;
+            return (
+              <React.Fragment key={sev}>
+                {i > 0 && " · "}
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  style={s.counter(sev, active, sevFilter !== null)}
+                  onClick={() => {
+                    setSevFilter((cur) => (cur === sev ? null : sev));
+                    setFocusIdx(0);
+                  }}
+                >
+                  <SevIcon size={13} />
+                  {t(`panel.severityCount.${sev}`, { count: counts[sev] })}
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </div>
         <div style={s.toggleGroup}>
           {t("panel.hideLowConfidence")}
           <Toggle on={hideLow} onChange={setHideLow} size={16} />

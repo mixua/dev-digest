@@ -8,8 +8,8 @@ export const SEVERITY_ORDER: Record<string, number> = {
   INFO: 3,
 };
 
-/** Confidence below this is hidden when "hide low confidence" is on. */
-export const LOW_CONFIDENCE_THRESHOLD = 0.65;
+/** Confidence at or below this is hidden when "hide low confidence" is on. */
+export const LOW_CONFIDENCE_THRESHOLD = 0.7;
 
 /** Keyboard shortcut → finding action. */
 export const KEY_TO_ACTION: Record<string, FindingActionKind> = {
