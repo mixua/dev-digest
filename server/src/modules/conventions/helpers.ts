@@ -79,7 +79,9 @@ export function buildSkillBody(items: SkillDraftItem[]): string {
         out.push(`Detected in \`${it.evidencePath}${range}\`.`);
         if (it.evidenceSnippet) {
           const lang = LANG[it.evidencePath.split('.').pop()?.toLowerCase() ?? ''] ?? '';
-          out.push('```' + lang, it.evidenceSnippet, '```');
+          // fence longer than any backtick run in the snippet so it can't close early
+          const fence = '`'.repeat(Math.max(3, ...(it.evidenceSnippet.match(/`+/g) ?? []).map((m) => m.length + 1)));
+          out.push(fence + lang, it.evidenceSnippet, fence);
         }
       }
       out.push('');

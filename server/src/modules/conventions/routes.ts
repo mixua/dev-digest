@@ -7,7 +7,7 @@ import { ConventionsService } from './service.js';
 
 const PatchBody = z.object({
   status: z.enum(['pending', 'accepted', 'rejected']).optional(),
-  rule: z.string().min(1).optional(),
+  rule: z.string().trim().min(1).max(1000).optional(),
 });
 
 /**

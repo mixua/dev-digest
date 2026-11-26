@@ -150,8 +150,7 @@ export class ConventionsService {
       return loc ? [{ c, loc }] : [];
     });
 
-    // 4. Re-scan: drop pending, skip anything already decided.
-    await this.repo.deletePending(workspaceId, repoId);
+    // 4. Re-scan: skip anything already decided, then swap pending atomically.
     const decided = await this.repo.listByStatus(workspaceId, repoId, ['accepted', 'rejected']);
     const seen = new Set(decided.map((r) => dedupKey(r.rule, r.evidencePath)));
     const rows = [];
@@ -174,7 +173,7 @@ export class ConventionsService {
         sampleCount: files.size,
       });
     }
-    await this.repo.insertMany(rows);
+    await this.repo.replacePending(workspaceId, repoId, rows);
     return this.list(workspaceId, repoId);
   }
 

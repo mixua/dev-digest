@@ -26,21 +26,20 @@ export class ConventionsRepository {
       .orderBy(desc(t.conventions.createdAt));
   }
 
-  async deletePending(workspaceId: string, repoId: string): Promise<void> {
-    await this.db
-      .delete(t.conventions)
-      .where(
-        and(
-          eq(t.conventions.workspaceId, workspaceId),
-          eq(t.conventions.repoId, repoId),
-          eq(t.conventions.status, 'pending'),
-        ),
-      );
-  }
-
-  async insertMany(rows: InsertConvention[]): Promise<ConventionRow[]> {
-    if (!rows.length) return [];
-    return this.db.insert(t.conventions).values(rows).returning();
+  /** Atomically swap the repo's pending candidates for `rows`. */
+  async replacePending(workspaceId: string, repoId: string, rows: InsertConvention[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .delete(t.conventions)
+        .where(
+          and(
+            eq(t.conventions.workspaceId, workspaceId),
+            eq(t.conventions.repoId, repoId),
+            eq(t.conventions.status, 'pending'),
+          ),
+        );
+      if (rows.length) await tx.insert(t.conventions).values(rows);
+    });
   }
 
   async update(
