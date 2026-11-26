@@ -3,7 +3,7 @@ import { unzipSync, strFromU8 } from 'fflate';
 import type { Container } from '../../platform/container.js';
 import { SkillsRepository } from './repository.js';
 import type { SkillStats } from './repository.js';
-import { toSkillDto, toSkillVersionDto } from './helpers.js';
+import { skillFromMarkdown, toSkillDto, toSkillVersionDto } from './helpers.js';
 import { ValidationError } from '../../platform/errors.js';
 
 export type { SkillStats };
@@ -147,16 +147,8 @@ export class SkillsService {
     const lower = filename.toLowerCase();
 
     if (lower.endsWith('.md')) {
-      const text = buf.toString('utf-8');
-      const name = extractMarkdownTitle(text) ?? stemFromFilename(filename);
-      return {
-        name,
-        description: '',
-        type: 'custom',
-        source: 'imported_url',
-        body: text,
-        ignored_files: [],
-      };
+      const skill = skillFromMarkdown(buf.toString('utf-8'), stemFromFilename(filename));
+      return { ...skill, source: 'imported_url', ignored_files: [] };
     }
 
     if (lower.endsWith('.zip')) {
@@ -177,19 +169,9 @@ export class SkillsService {
       if (!bodyBytes) {
         throw new ValidationError(`Could not read ${firstMdPath} from the zip archive`);
       }
-      const body = strFromU8(bodyBytes);
-      const name = extractMarkdownTitle(body) ?? stemFromFilename(firstMdPath);
-
+      const skill = skillFromMarkdown(strFromU8(bodyBytes), stemFromFilename(firstMdPath));
       const ignoredFiles = paths.filter((p) => p !== firstMdPath && !p.endsWith('/'));
-
-      return {
-        name,
-        description: '',
-        type: 'custom',
-        source: 'imported_url',
-        body,
-        ignored_files: ignoredFiles,
-      };
+      return { ...skill, source: 'imported_url', ignored_files: ignoredFiles };
     }
 
     throw new ValidationError(
@@ -199,12 +181,6 @@ export class SkillsService {
 }
 
 // ---- private helpers -------------------------------------------------------
-
-/** Extract the first # heading from markdown text, or undefined. */
-function extractMarkdownTitle(text: string): string | undefined {
-  const match = text.match(/^#\s+(.+)/m);
-  return match?.[1]?.trim();
-}
 
 /** Return the filename stem (no extension, no path). */
 function stemFromFilename(filename: string): string {
