@@ -1,6 +1,6 @@
 /** PR-list findings rollup (`modules/pulls/findings.ts`): latest run per agent, summed. */
 import { describe, it, expect } from 'vitest';
-import { latestReviewIdsPerAgent, sumSeverity } from '../src/modules/pulls/findings.js';
+import { latestReviewIdsPerAgent, sumSeverity, sumCost } from '../src/modules/pulls/findings.js';
 
 describe('latestReviewIdsPerAgent', () => {
   it('keeps only the newest review of each agent per PR', () => {
@@ -26,5 +26,19 @@ describe('sumSeverity', () => {
       ['r3', { critical: 0, warning: 1, suggestion: 4 }],
     ]);
     expect(sumSeverity(['r4', 'r3', 'r9'], counts)).toEqual({ critical: 1, warning: 3, suggestion: 4 });
+  });
+});
+
+describe('sumCost', () => {
+  it('sums known costs, skipping null/missing', () => {
+    const m = new Map<string, number | null>([['a', 0.01], ['b', null], ['c', 0.02]]);
+    expect(sumCost(['a', 'b', 'c', 'x'], m)).toBeCloseTo(0.03);
+  });
+  it('is null when no run has a cost', () => {
+    expect(sumCost(['a', 'x'], new Map([['a', null]]))).toBeNull();
+    expect(sumCost([], new Map())).toBeNull();
+  });
+  it('keeps a genuine zero cost', () => {
+    expect(sumCost(['a'], new Map([['a', 0]]))).toBe(0);
   });
 });

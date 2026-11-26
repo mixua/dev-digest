@@ -25,6 +25,7 @@ function run(o: Partial<RunSummary>): RunSummary {
     duration_ms: 1000,
     tokens_in: 100,
     tokens_out: 50,
+    cost_usd: null,
     findings_count: 0,
     grounding: "0/0 passed",
     ran_at: "2026-06-11T18:44:34.000Z",
@@ -79,5 +80,18 @@ describe("RunHistory — outcome badge", () => {
     expect(screen.getByLabelText("2 critical")).toBeInTheDocument();
     expect(screen.getByLabelText("4 suggestion")).toBeInTheDocument();
     expect(screen.queryByLabelText(/warning/)).not.toBeInTheDocument();
+  });
+});
+
+describe("RunHistory — cost", () => {
+  it("shows the cost for a done run", () => {
+    renderRuns([run({ status: "done", cost_usd: 0.0123, score: 80 })]);
+    expect(screen.getByText("$0.012")).toBeInTheDocument();
+  });
+
+  it("shows no cost for a running run", () => {
+    renderRuns([run({ status: "running", cost_usd: null })]);
+    expect(screen.queryByText(/\$\d/)).not.toBeInTheDocument();
+    expect(screen.queryByText("—")).not.toBeInTheDocument();
   });
 });

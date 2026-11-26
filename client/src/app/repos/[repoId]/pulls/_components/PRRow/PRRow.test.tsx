@@ -94,3 +94,16 @@ describe("PRRow findings cell", () => {
     expect(screen.queryByText(/accept/i)).not.toBeInTheDocument();
   });
 });
+
+describe("PRRow cost cell", () => {
+  it("shows a dash when cost is null", () => {
+    renderRow({ ...base, score: 50, findings_critical: 1, cost_usd: null });
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/\$\d/)).not.toBeInTheDocument();
+  });
+
+  it("shows the formatted cost when set", () => {
+    renderRow({ ...base, score: 50, findings_critical: 1, cost_usd: 0.14 });
+    expect(screen.getByText("$0.140")).toBeInTheDocument();
+  });
+});

@@ -8,7 +8,7 @@ import { getContext } from '../_shared/context.js';
 import { IdParams } from '../_shared/schemas.js';
 import { AppError, NotFoundError } from '../../platform/errors.js';
 import { deriveReviewStatus } from './status.js';
-import { latestReviewIdsPerAgent, sumSeverity, type SevCounts } from './findings.js';
+import { latestReviewIdsPerAgent, sumSeverity, sumCost, type SevCounts } from './findings.js';
 
 /**
  * F1 — pulls module. PR import via Octokit (list + per-PR detail).
@@ -116,12 +116,14 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
     const prIds = rows.map((r) => r.id);
     const latestReviewByPr = new Map<string, { score: number | null }>();
     const sevByPr = new Map<string, SevCounts>();
+    const costByPr = new Map<string, number | null>();
     if (prIds.length > 0) {
       const reviewRows = await container.db
         .select({
           id: t.reviews.id,
           prId: t.reviews.prId,
           agentId: t.reviews.agentId,
+          runId: t.reviews.runId,
           score: t.reviews.score,
         })
         .from(t.reviews)
@@ -152,6 +154,21 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
           countsByReview.set(sr.reviewId, c);
         }
         for (const [prId, ids] of pickedByPr) sevByPr.set(prId, sumSeverity(ids, countsByReview));
+
+        // Cost = sum over the run behind each picked review.
+        const runIdByReview = new Map(reviewRows.map((rv) => [rv.id, rv.runId]));
+        const runIds = pickedIds.map((id) => runIdByReview.get(id)).filter((x): x is string => !!x);
+        const costRows = runIds.length
+          ? await container.db
+              .select({ id: t.agentRuns.id, cost: t.agentRuns.costUsd })
+              .from(t.agentRuns)
+              .where(inArray(t.agentRuns.id, runIds))
+          : [];
+        const costByRun = new Map(costRows.map((c) => [c.id, c.cost]));
+        for (const [prId, ids] of pickedByPr) {
+          const rids = ids.map((id) => runIdByReview.get(id)).filter((x): x is string => !!x);
+          costByPr.set(prId, sumCost(rids, costByRun));
+        }
       }
     }
 
@@ -183,6 +200,7 @@ export default async function pullsRoutes(appBase: FastifyInstance) {
         findings_critical: sev ? sev.critical : null,
         findings_warning: sev ? sev.warning : null,
         findings_suggestion: sev ? sev.suggestion : null,
+        cost_usd: costByPr.get(r.id) ?? null,
       };
     });
   });

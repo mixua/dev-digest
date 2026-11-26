@@ -77,6 +77,8 @@ export function FindingsTab({
     [runs],
   );
 
+  const runById = useMemo(() => new Map((prRuns ?? []).map((r) => [r.run_id, r])), [prRuns]);
+
   return (
     <section>
       {liveRunIds.length > 0 && (
@@ -171,6 +173,7 @@ export function FindingsTab({
             headSha={headSha}
             targetRunId={target?.runId ?? null}
             targetNonce={target?.n ?? 0}
+            runById={runById}
           />
         ))
       )}
