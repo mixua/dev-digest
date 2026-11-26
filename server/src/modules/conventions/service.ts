@@ -116,7 +116,14 @@ export class ConventionsService {
 
     // 2. ONE structured model call.
     const { provider, model } = await resolveFeatureModel(this.container, workspaceId, 'conventions');
-    const llm = await this.container.llm(provider);
+    // missing key → clear 409 instead of a raw 500
+    const llm = await this.container.llm(provider).catch(() => {
+      throw new AppError(
+        'llm_not_configured',
+        `No API key for "${provider}" (model ${model}). Add it in Settings → API Keys or pick another model for "Conventions" in Settings → Feature Models.`,
+        409,
+      );
+    });
     const cap = (p: string, c: string) =>
       c.slice(0, CONFIG_FILES.includes(p) ? MAX_CONFIG_CHARS : MAX_SAMPLE_CHARS);
     const user = [...files].map(([p, c]) => wrapUntrusted(`file:${p}`, cap(p, c))).join('\n\n');
