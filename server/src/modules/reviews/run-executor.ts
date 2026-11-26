@@ -6,7 +6,7 @@ import * as schema from '../../db/schema.js';
 import type { AgentRow } from '../../db/rows.js';
 import type { ReviewRepository, FindingRow, PullRow, ReviewRow } from './repository.js';
 import { REVIEW_STRATEGY } from './constants.js';
-import { taskLine } from './helpers.js';
+import { formatSkillForPrompt, taskLine } from './helpers.js';
 import { loadDiff } from './diff-loader.js';
 
 /** Thrown by a run when the user cancels it mid-flight (between map files). */
@@ -183,6 +183,12 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // Fetch enabled skills linked to this agent (in order). Their bodies are
+      // injected into the prompt as "## Skills / rules" by assemblePrompt.
+      const linked = await this.container.agentsRepo.linkedSkills(agent.id);
+      const skillBodies = linked.filter((l) => l.skill.enabled).map((l) => formatSkillForPrompt(l.skill));
+      if (skillBodies.length) runLog.info(`skills: ${skillBodies.length} enabled skill(s) attached`);
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -204,13 +210,14 @@ export class ReviewRunExecutor {
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
         task,
+        ...(skillBodies.length ? { skills: skillBodies } : {}),
         sessionId: `${repo.owner}/${repo.name}#${pull.number}:${agent.name}`,
         onEvent: (e) => runLog.event(e.kind, e.msg, e.data),
         checkCancelled: () => {
           if (this.container.runBus.isCancelled(runId)) throw new RunCancelledError();
         },
       });
-      const { tokensIn, tokensOut, grounding } = outcome;
+      const { tokensIn, tokensOut, costUsd, grounding } = outcome;
 
       const keptFindings = outcome.review.findings;
 
@@ -245,6 +252,7 @@ export class ReviewRunExecutor {
         durationMs,
         tokensIn,
         tokensOut,
+        costUsd,
         findingsCount: findingRows.length,
         grounding,
         score: outcome.review.score,
@@ -265,6 +273,7 @@ export class ReviewRunExecutor {
           duration_ms: durationMs,
           tokens_in: tokensIn,
           tokens_out: tokensOut,
+          cost_usd: costUsd,
           findings: findingRows.length,
           grounding,
         },

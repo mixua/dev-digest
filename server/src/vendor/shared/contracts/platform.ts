@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Provider } from './knowledge.js';
+import { Finding } from './findings.js';
 
 /**
  * Platform / scaffolding DTOs owned by F1:
@@ -176,6 +177,8 @@ export const PrMeta = z.object({
   findings_critical: z.number().int().nullish(),
   findings_warning: z.number().int().nullish(),
   findings_suggestion: z.number().int().nullish(),
+  // Cost summed over the latest run of each agent (list endpoint only); null when unknown.
+  cost_usd: z.number().nullish(),
 });
 export type PrMeta = z.infer<typeof PrMeta>;
 

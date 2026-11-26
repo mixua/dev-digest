@@ -30,3 +30,13 @@ export function sumSeverity(reviewIds: string[], countsByReview: Map<string, Sev
   }
   return total;
 }
+
+/** Sum of known run costs over the picked runs; null when none has a cost. */
+export function sumCost(runIds: string[], costByRun: Map<string, number | null>): number | null {
+  let total: number | null = null;
+  for (const id of runIds) {
+    const c = costByRun.get(id);
+    if (c != null) total = (total ?? 0) + c;
+  }
+  return total;
+}
